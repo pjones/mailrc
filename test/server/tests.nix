@@ -30,18 +30,18 @@ let
       --host=localhost \
       --port=465 \
       --auth=plain \
-      --user='${username}' \
+      --user='${username}@${domain}' \
       --passwordeval='echo ${password}' \
       --tls=on \
       --tls-starttls=off \
       --tls-certcheck=off \
-      --from='${username}@${domain}' \
+      --from="$to" \
       --timeout=5 \
       "$to" < ${msg}
   '';
 
   netrc = writeText "netrc" ''
-    machine localhost login ${username} password ${password}
+    machine localhost login ${username}@${domain} password ${password}
   '';
 
   imap = writeShellScript "test-mailstack-imap-script" ''
@@ -61,7 +61,7 @@ let
       --timeout 5 \
       --ssl \
       --nosslcertck \
-      --user '${username}' \
+      --user '${username}@${domain}' \
       --auth password \
       localhost
   '';

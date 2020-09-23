@@ -32,7 +32,7 @@ stdenvNoCC.mkDerivation {
       "$out/bin/mailrc-tests" \
       --prefix PATH : "${path}" \
       --set TEST_ROOT "$out" \
-      --set TEST_USER "${user.systemUser}"
+      --set TEST_USER "${user.systemUser}@${user.systemDomain}"
 
     for file in mail/*; do
       install -m 0444 "$file" "$out/mail/"

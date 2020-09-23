@@ -6,4 +6,5 @@
 
   # User name for a local account.
   systemUser = "tester";
+  systemDomain = "test.example.com";
 }

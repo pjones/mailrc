@@ -33,39 +33,41 @@ let
   util = pkgs.callPackage ../util.nix { };
 
   ##############################################################################
-  # Postfix and Dovecot Password Entries:
-  passwords =
+  # A shell script that can generate a Dovecot password file:
+  passwordFileScript = dest:
     let
-      common = h: a:
-        ":${a.password}:${toString a.uid}:${toString a.gid}::${
-        util.homeDir cfg {
-          host = h;
-          account = a;
-        }
-      }::";
-      local = h: a: if a.localPart != null then a.localPart else a.username;
-      entry = h: a: ''
-        ${a.username}${common h a}
-        ${local h a}@${h.name}${common h a}
+      # Invoke the password script for the given host and account.
+      call = host: account: ''
+        ${mailpkgs.dovecot-scripts}/bin/dovecot-password-entry.sh \
+          -u "${account.username}@${host.name}" \
+          -p "${account.passwordFile}" \
+          -U "${toString account.uid}" \
+          -G "${toString account.gid}" \
+          -d "${util.homeDir cfg { inherit host account; }}" \
+          >> "${dest}"
       '';
-      # Virtual users:
+
+      lines = [
+        "rm -f ${dest}"
+        "touch ${dest}"
+        "chmod 0400 ${dest}"
+        "chown root:root ${dest}"
+      ]
+      # Virtual Users:
+      ++ lib.concatMap
+        (host: map (call host) (lib.attrValues host.accounts))
+        (lib.attrValues cfg.virtualhosts)
+      # System Users:
+      ++ map
+        (call { name = cfg.externalServerName; })
+        (lib.attrValues cfg.systemUsers);
     in
-    (lib.concatMapStrings
-      (host:
-        lib.concatMapStrings
-          (account: entry host account)
-          (lib.attrValues host.accounts))
-      (lib.attrValues cfg.virtualhosts)) +
-    # System users:
-    (lib.concatMapStrings
-      (user:
-        let h = { name = cfg.externalServerName; }; in entry h user)
-      (lib.attrValues cfg.systemUsers));
+    pkgs.writeShellScript
+      "gen-dovecot-passwords"
+      (lib.concatStringsSep "\n" lines);
 
-  ##############################################################################
-  # Put the Files in the Nix Store:
-  passwordsFile = pkgs.writeText "postfix-passwd" passwords;
-
+  # Final location of the password file:
+  passwordsFile = "/var/lib/dovecot/passwords";
 in
 {
   ###### Implementation
@@ -197,6 +199,11 @@ in
     # Install some scripts that are allowed to be used from sieves:
     systemd.services.dovecot2 = {
       preStart = ''
+        # Generate the password file:
+        ${passwordFileScript passwordsFile}
+      ''
+      + ''
+        # Populate the sieve bin directory:
         rm -rf ${sieveBinDir}
         mkdir -p ${sieveBinDir}
       ''

@@ -37,15 +37,11 @@ let
     (host: lib.concatMapStrings
       (account:
         let
-          local =
-            if account.localPart != null
-            then account.localPart
-            else account.username;
           dir =
             lib.removePrefix cfg.vhostDir
               (util.homeDir cfg { inherit host account; });
         in
-        "${local}@${host.name}\t${dir}/mail/\n")
+        "${account.username}@${host.name}\t${dir}/mail/\n")
       (lib.attrValues host.accounts))
     (lib.attrValues cfg.virtualhosts);
 
@@ -61,9 +57,11 @@ let
   # `From:' addresses:
   senderMap =
     let
-      entry = user: hostname: email: "${email}\t${user.username},${local user}@${hostname}\n";
-      addr = user: hostname: "${local user}@${hostname}";
-      local = user: if user.localPart != null then user.localPart else user.username;
+      entry = user: hostname: email:
+        "${email}\t${user.username},${user.username}@${hostname}\n";
+
+      addr = user: hostname:
+        "${user.username}@${hostname}";
 
       # Hosts have accounts:
       hostEntries = host:
@@ -89,7 +87,9 @@ let
           account.aliases;
 
     in
-    lib.concatMapStrings hostEntries (lib.attrValues cfg.virtualhosts)
+    lib.concatMapStrings
+      hostEntries
+      (lib.attrValues cfg.virtualhosts)
     + systemEntries;
 
   # Relay transport maps:
@@ -105,13 +105,15 @@ let
     let
       entry = addr: "${addr}\tOK\n";
 
-      # What is the users' local email component?
-      local = user: if user.localPart != null then user.localPart else user.username;
-
       # Extract account names and aliases from a host:
       hostAddrs = host:
-        (map (u: "${local u}@${host.name}") (lib.attrValues host.accounts)) ++
-        (lib.concatMap (a: a.aliases) (lib.attrValues host.accounts));
+        map
+          (account: "${account.username}@${host.name}")
+          (lib.attrValues host.accounts)
+        ++
+        lib.concatMap
+          (account: account.aliases)
+          (lib.attrValues host.accounts);
 
       # Extract host aliases:
       hostAliases = host:

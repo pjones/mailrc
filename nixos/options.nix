@@ -10,14 +10,9 @@ let
       username = lib.mkOption {
         type = lib.types.str;
         example = "jdoe";
-        description = "Account username.";
-      };
-
-      localPart = lib.mkOption {
-        type = with lib.types; nullOr str;
-        default = null;
-        example = "jdoe";
-        description = "Email address local part if different than username.";
+        description = ''
+          Account username and local part of the email address.
+        '';
       };
 
       aliases = lib.mkOption {
@@ -27,10 +22,15 @@ let
         description = "Additional addresses this user is allowed to use.";
       };
 
-      password = lib.mkOption {
-        type = lib.types.str;
-        example = "{SSHA}XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
-        description = "Encrypted password for postfix and dovecot.";
+      passwordFile = lib.mkOption {
+        type = lib.types.path;
+        example = "/run/secrets/account-password-file";
+        description = ''
+          Path to a file that contains the account's hashed password.
+          The contents of the file should look something like:
+
+          {SSHA}XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+        '';
       };
 
       home = lib.mkOption {
@@ -84,7 +84,7 @@ let
         default = { };
         example = {
           jdoe = {
-            password = "{SSHA}XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+            passwordFile = "/run/secrets/jdoe";
           };
         };
       };
@@ -194,7 +194,7 @@ in
       default = { };
       example = {
         jdoe = {
-          password = "{SSHA}XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+          passwordFile = "/run/secrets/jdoe";
           home = "/home/jdoe";
         };
       };
@@ -206,7 +206,7 @@ in
       default = { };
       example = {
         "example.com" = {
-          accounts.jdoe.password = "{SSHA}XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+          accounts.jdoe.passwordFile = "/run/secrets/jdoe";
           aliases.john = "jdoe";
         };
       };

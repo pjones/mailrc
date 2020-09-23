@@ -23,20 +23,17 @@ let
     text = mkSigningTable (lib.attrValues cfg.hosts);
   };
 
-  # Make a file in the nix store to hold a private key for a host.
-  # FIXME: Make this a private file as soon as nix supports that.
-  openHostPrivateKey = host: pkgs.writeTextFile {
-    name = "${host.name}-dkim-key";
-    text = host.privateKey;
-  };
-
-  # Temp function to hold secure version of the host key.
-  hostPrivateKey = host: homeDir + "/" + baseNameOf "${openHostPrivateKey host}";
-
   # Entries in the KeyTable.
   mkKeyTable = hosts:
     lib.concatMapStrings
-      (h: "${mkResourceName h} ${h.signingDomain}:${h.selector}:${hostPrivateKey h}\n")
+      (host:
+        "${mkResourceName host} "
+        + lib.concatStringsSep ":" [
+          host.signingDomain
+          host.selector
+          host.privateKeyFile
+        ]
+        + "\n")
       hosts;
 
   keyTableFile = pkgs.writeTextFile {
@@ -133,10 +130,10 @@ let
         '';
       };
 
-      privateKey = lib.mkOption {
-        type = lib.types.str;
+      privateKeyFile = lib.mkOption {
+        type = lib.types.path;
         description = ''
-          The text of the RSA private key used for signing.
+          Path to the RSA private key used for signing.
         '';
       };
     };
@@ -212,7 +209,7 @@ in
             addressWildcard = "*@example.com";
             signingDomain = "example.com";
             selector = "20150303";
-            privateKey = "...";
+            privateKeyFile = "/run/secrets/example.com.pem";
           };
         };
     };
@@ -234,21 +231,9 @@ in
       };
 
       preStart = ''
-        ${pkgs.coreutils}/bin/mkdir -p                      ${homeDir}
-        ${pkgs.coreutils}/bin/chown ${cfg.user}:${cfg.user} ${homeDir}
-        ${pkgs.coreutils}/bin/chmod 0770                    ${homeDir}
-
-        # HACK: Copy key files into a place where they can be secured
-        # since /nix/store is always readable.  This just gets around
-        # OpenDKIM refusing to use the keys, it doesn't prevent
-        # someone from seeing the keys in /nix/store.
-        ${lib.concatMapStrings
-        (host: ''
-          ${pkgs.coreutils}/bin/cp ${openHostPrivateKey host} ${hostPrivateKey host}
-          ${pkgs.coreutils}/bin/chown ${cfg.user}:${cfg.user} ${hostPrivateKey host}
-          ${pkgs.coreutils}/bin/chmod 0640                    ${hostPrivateKey host}
-        '')
-        (lib.attrValues cfg.hosts)}
+        mkdir -p ${homeDir}
+        chown ${cfg.user}:${cfg.user} ${homeDir}
+        chmod 0770 ${homeDir}
       '';
     };
 

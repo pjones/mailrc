@@ -21,6 +21,8 @@ let
     };
 in
 {
+  dovecot-scripts = pkgs.callPackage ./dovecot-scripts.nix { };
+
   sieve-user = pkgs.callPackage ./sieve-user.nix {
     inherit mkSieveDerivation;
   };

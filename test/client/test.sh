@@ -7,15 +7,17 @@ set -o pipefail
 ################################################################################
 TEST_ROOT=${TEST_ROOT:-"$(dirname "$0")/.."}
 TEST_USER=${TEST_USER:-pjones}
+USER="$(echo "$TEST_USER" | cut -d@ -f1)"
+HOME="/home/$USER"
 
 ################################################################################
 GPG_KEY=password
 MAIL_INPUT=/var/lib/mailrc-test
-MAIL_OUPUT=/home/"$TEST_USER"/mail
+MAIL_OUPUT="$HOME/mail"
 
 ################################################################################
 notmuch() {
-  su - "$TEST_USER" -c "notmuch $*"
+  su - "$USER" -c "notmuch $*"
 }
 
 ################################################################################
@@ -45,7 +47,7 @@ run_sieve() {
   sieve-test \
     -e -u "$TEST_USER" \
     -l "maildir:~/mail:INBOX=~/mail" \
-    /home/"$TEST_USER"/.config/dovecot/sieve/active \
+    "$HOME/.config/dovecot/sieve/active" \
     "$MAIL_INPUT/$mail_file"
 }
 
