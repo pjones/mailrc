@@ -4,8 +4,6 @@
 let
   cfg = config.mailrc.opendkim;
   defaultUser = "opendkim";
-  homeDir = "/run/opendkim";
-  pidFile = "${homeDir}/opendkim.pid";
 
   # The name of the TXT resource record type.
   mkResourceName = host: "${host.selector}._domainkey.${host.signingDomain}";
@@ -61,7 +59,6 @@ let
     LogResults              Yes
 
     UMask                   002
-    UserID                  ${confOpts.user}:${confOpts.user}
     Socket                  inet:${toString confOpts.port}@${confOpts.interface}
 
     Canonicalization        relaxed/simple
@@ -224,34 +221,24 @@ in
 
       serviceConfig = {
         Restart = "on-failure";
-        ExecStart = "${pkgs.opendkim}/bin/opendkim -P ${pidFile} -x ${openDKIMConfFile}";
-        KillMode = "process";
-        Type = "forking";
-        PIDFile = pidFile;
+        ExecStart = "${pkgs.opendkim}/bin/opendkim -f -x ${openDKIMConfFile}";
+        User = cfg.user;
+        Group = cfg.user;
+        RuntimeDirectory = "opendkim";
       };
-
-      preStart = ''
-        mkdir -p ${homeDir}
-        chown ${cfg.user}:${cfg.user} ${homeDir}
-        chmod 0770 ${homeDir}
-      '';
     };
 
     users.users = lib.optionalAttrs (cfg.user == defaultUser) {
       ${defaultUser} = {
         description = "OpenDKIM server daemon owner";
         group = defaultUser;
-        # uid = config.ids.uids.opendkim;
-        uid = 208;
-        createHome = true;
-        home = homeDir;
+        uid = config.ids.uids.opendkim;
       };
     };
 
     users.groups = lib.optionalAttrs (cfg.user == defaultUser) {
       ${defaultUser} = {
-        # gid = config.ids.gids.opendkim;
-        gid = 208;
+        gid = config.ids.gids.opendkim;
         members = [ defaultUser ];
       };
     };

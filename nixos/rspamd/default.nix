@@ -77,6 +77,12 @@ in
         skip_local = false;
       '';
 
+      # https://rspamd.com/doc/modules/dkim_signing.html
+      # We use OpenDKIM:
+      locals."dkim_signing.conf".text = ''
+        enabled = false;
+      '';
+
       # https://rspamd.com/doc/tutorials/writing_rules.html
       locals."groups.conf".text = ''
         symbols = {
