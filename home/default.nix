@@ -99,10 +99,25 @@ in
     })
 
     (lib.mkIf (cfg.enable && cfg.sieve.enable) {
-      xdg.configFile = {
-        "dovecot/sieve/scripts".source = "${mailpkgs.sieve-user}/sieve";
-        "dovecot/sieve/active".source = "${mailpkgs.sieve-user}/sieve/mail.sieve";
-      };
+      # Dovecot is too smart for its own good and will only traverse a
+      # single symbolic link.  Therefore we need to manually link
+      # files to the Nix store directly:
+      home.activation.link-dovecot-sieve-files =
+        lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+          $DRY_RUN_CMD rm -rf \
+            "${config.xdg.configHome}/dovecot/sieve"
+
+          $DRY_RUN_CMD mkdir -p \
+            "${config.xdg.configHome}/dovecot/sieve"
+
+          $DRY_RUN_CMD ln -nfs \
+            "${mailpkgs.sieve-user}/sieve" \
+            "${config.xdg.configHome}/dovecot/sieve/scripts"
+
+          $DRY_RUN_CMD ln -nfs \
+            "${mailpkgs.sieve-user}/sieve/mail.sieve" \
+            "${config.xdg.configHome}/dovecot/sieve/active"
+        '';
     })
   ];
 }
