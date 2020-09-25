@@ -3,6 +3,7 @@
 ################################################################################
 set -eu
 set -o pipefail
+set -x
 
 ################################################################################
 TEST_ROOT=${TEST_ROOT:-"$(dirname "$0")/.."}
@@ -46,17 +47,16 @@ run_sieve() {
 
   sieve-test \
     -e -u "$TEST_USER" \
-    -l "maildir:~/mail:INBOX=~/mail" \
     "$HOME/.config/dovecot/sieve/active" \
     "$MAIL_INPUT/$mail_file"
 }
 
 ################################################################################
-make_folder_name() {
+make_notmuch_folder_name() {
   local folder=$1
 
   if [ "$folder" = "INBOX" ]; then
-    echo "$folder"
+    echo '""'
   else
     echo ".$folder"
   fi
@@ -64,10 +64,13 @@ make_folder_name() {
 
 ################################################################################
 make_maildir_path() {
-  local folder
+  local folder=$1
 
-  folder=$(make_folder_name "$1")
-  echo "$MAIL_OUPUT/$folder"
+  if [ "$folder" = "INBOX" ]; then
+    echo "$MAIL_OUPUT"
+  else
+    echo "$MAIL_OUPUT/.$folder"
+  fi
 }
 
 ################################################################################
@@ -102,14 +105,14 @@ should_file_into() {
   local notmuch_t_count
   local notmuch_f_count
 
-  notmuch_folder_name=$(make_folder_name "$folder")
+  notmuch_folder_name=$(make_notmuch_folder_name "$folder")
   notmuch_t_count=$(notmuch count "tag:unread")
   notmuch_f_count=$(notmuch count "folder:$notmuch_folder_name")
   maildir_count=$(maildir_count "$folder")
 
   run_sieve "$mail"
 
-  assert "inserting $mail should increment the maildir message count" \
+  assert "inserting $mail should increment the $folder message count" \
     "$((maildir_count + 1))" -eq "$(maildir_count "$folder")"
 
   assert "inserting $mail should increment the tag:unread count" \
