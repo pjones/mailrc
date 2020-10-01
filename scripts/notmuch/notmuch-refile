@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+#
+# Move messages that match a query into the specified folder.
+#
+# Usage: notmuch-refile folder query
+#
+
+set -eu
+set -o pipefail
+
+if [ "$#" -lt 2 ]; then
+  echo >&2 "ERROR: Usage: $(basename "$0") folder query"
+  exit 1
+fi
+
+mail_root=$(notmuch config get database.path)
+maildir=
+
+if [ "$1" = "INBOX" ]; then
+  maildir="$mail_root"
+else
+  maildir="$mail_root/.$1"
+fi
+
+if [ ! -d "$maildir" ]; then
+  mmkdir "$maildir"
+fi
+
+shift
+
+notmuch search --output=files --exclude=false "$@" |
+  mrefile "$maildir"

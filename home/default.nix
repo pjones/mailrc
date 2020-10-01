@@ -4,8 +4,12 @@ let
   types = import ./types.nix { inherit lib pkgs; };
   mailpkgs = import ../pkgs { inherit pkgs; };
 
+  # Return the full path to the given hook file.
+  hookFile = name:
+    "${cfg.notmuch.ini.database.path}/.notmuch/hooks/${name}";
+
   mkHookScript = name: lines: {
-    "${cfg.notmuch.ini.database.path}/.notmuch/hooks/${name}".source =
+    ${hookFile name}.source =
       pkgs.writeShellScript "notmuch-${name}-hook" ''
         export PATH=${lib.makeBinPath cfg.notmuch.packages}''${PATH:+:}$PATH
         ${lines}
@@ -21,6 +25,7 @@ in
 {
   imports = [
     ./notmuch.nix
+    ./muchsync.nix
   ];
 
   options.mailrc = {
@@ -77,10 +82,15 @@ in
 
   config = lib.mkMerge [
     (lib.mkIf cfg.enable {
-      home.packages = cfg.notmuch.packages;
+      home.packages =
+        cfg.notmuch.packages
+        ++ [ mailpkgs.notmuch-scripts ];
 
       home.file = {
         ".notmuch-config".text = types.notmuchIni.toString cfg.notmuch.ini;
+
+        ${hookFile "x-post-tag"}.source =
+          "${mailpkgs.notmuch-scripts}/bin/notmuch-post-tag-hook";
       }
       // lib.optionalAttrs
         (cfg.notmuch.postInsertTags != [ ]

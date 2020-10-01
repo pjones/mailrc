@@ -26,6 +26,11 @@ pkgs.nixosTest {
 
       mailrc.enable = true;
       mailrc.sieve.enable = true;
+
+      mailrc.muchsync = {
+        enable = true;
+        remotes = [ "localhost" ];
+      };
     };
   };
 
@@ -43,7 +48,7 @@ pkgs.nixosTest {
     machine.wait_for_unit("dovecot2.service")
     machine.succeed("test -L /var/lib/dovecot/pipe-bin/notmuch-insert.sh")
 
-    machine.succeed("mailrc-tests")
+    machine.succeed("su - ${user.systemUser} -c mailrc-tests")
     machine.succeed("test -e /home/${user.systemUser}/mail/.notmuch/xapian/position.glass")
   '';
 }

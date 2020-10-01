@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+
+#
+# Move messages into the correct folder based on tags.
+#
+# This hook script is meant to be called from an MUA after tagging.
+# The MUA is expected to add the "move" tag so messages that need to
+# be moved can be found efficiently.
+#
+
+set -eu
+set -o pipefail
+
+mail_root=$(notmuch config get database.path)
+
+if [ -z "$mail_root" ] || [ ! -d "$mail_root" ]; then
+  echo >&2 "ERROR: unable to find the root of the mail directory"
+  exit 1
+fi
+
+# Run a notmuch search:
+search() {
+  notmuch search \
+    --output=files \
+    --exclude=false \
+    tag:move and "$@"
+}
+
+# Refile messages (read from stdin) to the destination folder (given
+# in $1):
+refile() {
+  local folder=$1
+  local maildir
+
+  if [ "$folder" = "INBOX" ]; then
+    maildir=$mail_root
+  else
+    maildir="$mail_root/$folder"
+    mmkdir "$maildir"
+  fi
+
+  mrefile "$maildir"
+}
+
+# Archived messages:
+search tag:archived and not folder:.Archive |
+  refile ".Archive"
+
+# Deleted messages:
+search tag:deleted and not folder:.Trash |
+  refile ".Trash"
+
+# Junk mail:
+search '(' tag:spam or tag:blacklisted ')' and not folder:.Junk |
+  refile ".Junk"
+
+# Messages in the junk folder that are not actually spam:
+search '(' not tag:spam ')' and folder:.Junk |
+  refile "INBOX"
+
+# Remove the "move" tag.
+notmuch tag -move -- tag:move

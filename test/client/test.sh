@@ -3,23 +3,15 @@
 ################################################################################
 set -eu
 set -o pipefail
-set -x
 
 ################################################################################
 TEST_ROOT=${TEST_ROOT:-"$(dirname "$0")/.."}
 TEST_USER=${TEST_USER:-pjones}
-USER="$(echo "$TEST_USER" | cut -d@ -f1)"
-HOME="/home/$USER"
 
 ################################################################################
 GPG_KEY=password
-MAIL_INPUT=/var/lib/mailrc-test
-MAIL_OUPUT="$HOME/mail"
-
-################################################################################
-notmuch() {
-  su - "$USER" -c "notmuch $*"
-}
+MAIL_INPUT=/tmp/mailrc-test
+MAIL_OUPUT=$(notmuch config get database.path)
 
 ################################################################################
 prepare_mail_input() {
@@ -39,6 +31,9 @@ prepare_mail_input() {
 prepare_notmuch_database() {
   run_sieve "nixos.mail"
   notmuch new
+
+  assert "new database should have a single message" \
+    "$(notmuch count)" -eq 1
 }
 
 ################################################################################
@@ -91,8 +86,8 @@ assert() {
   shift
 
   if ! test "$@"; then
-    echo >&2 "FAIL: $msg"
-    echo >&2 "FAIL: $*"
+    echo >&2 "FAIL: ${FUNCNAME[1]}: $msg"
+    echo >&2 "FAIL: ${FUNCNAME[1]}: $*"
     exit 1
   fi
 }
@@ -125,13 +120,11 @@ should_file_into() {
 ################################################################################
 should_all_be_unseen() {
   local maildir
-  local count
 
   maildir=$(make_maildir_path "$1")
-  count=$(mlist "$maildir" | mscan -f %u | grep -Evc '^\.' || :)
 
   assert "$1 folder should only have unseen messages" \
-    "$count" -eq 0
+    "$(mlist -s "$maildir" | wc -l)" -eq 0
 }
 
 ################################################################################
@@ -140,21 +133,67 @@ should_get_from_me_tag() {
   local folder=$2
   local maildir_count
   local notmuch_count
-  local maildir
+  local notmuch_folder
 
   maildir_count=$(maildir_count "$folder")
   notmuch_count=$(notmuch count tag:from-me)
+  notmuch_folder=$(make_notmuch_folder_name "$folder")
 
-  maildir=$(make_maildir_path "$folder")
-  cp "$MAIL_INPUT/$mail" "$maildir/cur"
+  run_sieve "$mail"
 
-  assert "inserting $mail should increment the maildir message count" \
+  assert "inserting $mail should increment the $folder message count" \
     "$((maildir_count + 1))" -eq "$(maildir_count "$folder")"
 
   notmuch new
 
   assert "running 'notmuch new' for $mail should increment the tag:from-me count" \
     "$((notmuch_count + 1))" -eq "$(notmuch count tag:from-me)"
+
+  assert "notmuch and maildir should agree on the number of messages in $folder" \
+    "$(maildir_count "$folder")" -eq \
+    "$(notmuch count folder:"$notmuch_folder")"
+}
+
+################################################################################
+should_move_tagged_messages() {
+  local tag=$1
+  local from_folder=$2
+  local to_folder=$3
+  local from_count
+  local to_count
+
+  from_count=$(maildir_count "$from_folder")
+  to_count=$(maildir_count "$to_folder")
+
+  assert "number of messages in $from_folder should be greater than 0" \
+    "$from_count" -gt 0
+
+  # Tag messages so that they can be moved:
+  notmuch tag +"$tag" +move -- \
+    folder:"$(make_notmuch_folder_name "$from_folder")"
+
+  assert "number of messages with tag:move should match $from_folder count" \
+    "$(notmuch count tag:move)" -eq "$from_count"
+
+  # Call the move hook to move messages around:
+  "$MAIL_OUPUT/.notmuch/hooks/x-post-tag"
+
+  assert "number of messages in $to_folder should increase by $from_count" \
+    "$((to_count + from_count))" -eq "$(maildir_count "$to_folder")"
+
+  assert "tag:move should have been removed from all messages" \
+    "$(notmuch count tag:move)" -eq 0
+
+  # Update notmuch database:
+  notmuch new
+
+  # Now move the messages back:
+  notmuch-refile \
+    "$from_folder" \
+    folder:"$(make_notmuch_folder_name "$to_folder")"
+
+  assert "refiling all messages from $to_folder to $from_folder should move files" \
+    "$((from_count + to_count))" -eq "$(maildir_count "$from_folder")"
 }
 
 ################################################################################
@@ -162,6 +201,7 @@ run_tests() {
   should_file_into "github.mail" "mlists"
   should_all_be_unseen "mlists"
   should_get_from_me_tag "fromme.mail" "INBOX"
+  should_move_tagged_messages "archived" "INBOX" "Archive"
 }
 
 ################################################################################

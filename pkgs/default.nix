@@ -22,6 +22,7 @@ let
 in
 {
   dovecot-scripts = pkgs.callPackage ./dovecot-scripts.nix { };
+  notmuch-scripts = pkgs.callPackage ./notmuch-scripts.nix { };
 
   sieve-user = pkgs.callPackage ./sieve-user.nix {
     inherit mkSieveDerivation;
