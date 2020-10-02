@@ -58,5 +58,6 @@ search '(' tag:spam or tag:blacklisted ')' and not folder:.Junk |
 search '(' not tag:spam ')' and folder:.Junk |
   refile "INBOX"
 
-# Remove the "move" tag.
+# Remove the "move" tag and update the database.
 notmuch tag -move -- tag:move
+notmuch new
