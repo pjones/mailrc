@@ -1,7 +1,11 @@
 { config, pkgs, lib, ... }:
 let
   cfg = config.mailrc.muchsync;
-  path = lib.makeBinPath config.mailrc.notmuch.packages;
+
+  path = lib.makeBinPath (
+    config.mailrc.notmuch.packages
+    ++ [ pkgs.openssh ]
+  );
 
   script = pkgs.writeShellScript "muchsync" (
     ''
