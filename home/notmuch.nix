@@ -46,12 +46,22 @@ let
   };
 
   ##############################################################################
+  mkMailingList = to: tag: {
+    add = [ "mailing-list" tag ];
+    query = qAnd [ "to:${to}" "tag:new" ];
+  };
+
+  ##############################################################################
   postNewTags = [
     # New messages in certain folders need default tags:
     (mkFolderRule "Junk" "spam")
     (mkFolderRule "Trash" "deleted")
     (mkFolderRule "Sent" "sent")
     (mkFolderRule "Archive" "archived")
+
+    # Mailing lists:
+    (mkMailingList "notmuch@notmuchmail.org" "notmuch")
+    (mkMailingList "haskell-cafe@haskell.org" "haskell-cafe")
 
     # Message from me should be tagged as such so they can be moved
     # to the sent folder if necessary:
