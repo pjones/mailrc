@@ -199,6 +199,7 @@ should_move_tagged_messages() {
 ################################################################################
 run_tests() {
   should_file_into "github.mail" "mlists"
+  should_file_into "travel.mail" "Travel"
   should_all_be_unseen "mlists"
   should_get_from_me_tag "fromme.mail" "INBOX"
   should_move_tagged_messages "archived" "INBOX" "Archive"
