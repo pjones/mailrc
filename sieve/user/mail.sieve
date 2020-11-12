@@ -5,6 +5,10 @@ require
   , "vnd.dovecot.pipe"
   ];
 
+# auto-confirm@amazon.com
+# account-update@amazon.com
+# shipment-tracking@amazon.com
+
 ################################################################################
 if allof
   ( address :is :localpart "to" "postmaster"
@@ -14,7 +18,7 @@ if allof
   # FIXME: At some point these should be piped to a script that will
   # extract the DMARC reports and load them into a database.
   setflag "\\seen";
-  pipe "notmuch-insert.sh" [ "root" ];
+  pipe "notmuch-insert.sh" [ "root", "-unread" ];
 }
 
 ################################################################################

@@ -93,28 +93,38 @@ assert() {
 }
 
 ################################################################################
-should_file_into() {
-  local mail=$1
-  local folder=$2
+# Inserting a message should increase the tag count by N.
+should_increase_tag_count_by() {
+  local mail=$1   # The mail message to insert.
+  local folder=$2 # The folder that should be updated.
+  local tag=$3    # The tag that should change.
+  local count=$4  # The number of messages that should get the tag.
   local maildir_count
-  local notmuch_t_count
-  local notmuch_f_count
+  local notmuch_count
+  local notmuch_folder
 
-  notmuch_folder_name=$(make_notmuch_folder_name "$folder")
-  notmuch_t_count=$(notmuch count "tag:unread")
-  notmuch_f_count=$(notmuch count "folder:$notmuch_folder_name")
   maildir_count=$(maildir_count "$folder")
+  notmuch_count=$(notmuch count tag:"$tag")
+  notmuch_folder=$(make_notmuch_folder_name "$folder")
 
   run_sieve "$mail"
 
   assert "inserting $mail should increment the $folder message count" \
     "$((maildir_count + 1))" -eq "$(maildir_count "$folder")"
 
-  assert "inserting $mail should increment the tag:unread count" \
-    "$((notmuch_t_count + 1))" -eq "$(notmuch count "tag:unread")"
+  notmuch new
 
-  assert "inserting $mail should increment the folder:$notmuch_folder_name count" \
-    "$((notmuch_f_count + 1))" -eq "$(notmuch count "folder:$notmuch_folder_name")"
+  assert "running 'notmuch new' for $mail should increment the tag:$tag count" \
+    "$((notmuch_count + count))" -eq "$(notmuch count tag:"$tag")"
+
+  assert "notmuch and maildir should agree on the number of messages in $folder" \
+    "$(maildir_count "$folder")" -eq \
+    "$(notmuch count folder:"$notmuch_folder")"
+}
+
+################################################################################
+should_file_into() {
+  should_increase_tag_count_by "$1" "$2" "unread" 1
 }
 
 ################################################################################
@@ -125,33 +135,6 @@ should_all_be_unseen() {
 
   assert "$1 folder should only have unseen messages" \
     "$(mlist -s "$maildir" | wc -l)" -eq 0
-}
-
-################################################################################
-should_get_from_me_tag() {
-  local mail=$1
-  local folder=$2
-  local maildir_count
-  local notmuch_count
-  local notmuch_folder
-
-  maildir_count=$(maildir_count "$folder")
-  notmuch_count=$(notmuch count tag:from-me)
-  notmuch_folder=$(make_notmuch_folder_name "$folder")
-
-  run_sieve "$mail"
-
-  assert "inserting $mail should increment the $folder message count" \
-    "$((maildir_count + 1))" -eq "$(maildir_count "$folder")"
-
-  notmuch new
-
-  assert "running 'notmuch new' for $mail should increment the tag:from-me count" \
-    "$((notmuch_count + 1))" -eq "$(notmuch count tag:from-me)"
-
-  assert "notmuch and maildir should agree on the number of messages in $folder" \
-    "$(maildir_count "$folder")" -eq \
-    "$(notmuch count folder:"$notmuch_folder")"
 }
 
 ################################################################################
@@ -201,7 +184,8 @@ run_tests() {
   should_file_into "github.mail" "mlists"
   should_file_into "travel.mail" "Travel"
   should_all_be_unseen "mlists"
-  should_get_from_me_tag "fromme.mail" "INBOX"
+  should_increase_tag_count_by "fromme.mail" "INBOX" "from-me" 1
+  should_increase_tag_count_by "postmaster.mail" "root" "unread" 0
   should_move_tagged_messages "archived" "INBOX" "Archive"
 }
 
