@@ -26,6 +26,7 @@ in
     # SSL/TLS certificates.
     security.acme.certs = {
       ${cfg.officialName} = {
+        group = cfg.postfixGroup;
         postRun = ''
           systemctl restart postfix.service
           systemctl restart dovecot2.service
