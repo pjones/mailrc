@@ -19,10 +19,14 @@ pkgs.nixosTest {
 
     environment.systemPackages = [ tests ];
 
-    home-manager.users.${user.systemUser} = { ... }: {
+    home-manager.users.${user.systemUser} = { lib, ... }: {
       imports = [
         ../../home
       ];
+
+      home.stateVersion = lib.mkForce "20.09";
+      home.username = lib.mkForce user.systemUser;
+      home.homeDirectory = lib.mkForce "/home/${user.systemUser}";
 
       mailrc.enable = true;
       mailrc.sieve.enable = true;

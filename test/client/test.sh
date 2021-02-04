@@ -6,7 +6,7 @@ set -o pipefail
 
 ################################################################################
 TEST_ROOT=${TEST_ROOT:-"$(dirname "$0")/.."}
-TEST_USER=${TEST_USER:-pjones}
+TEST_USER=${TEST_USER:-tester}
 
 ################################################################################
 GPG_KEY=password
