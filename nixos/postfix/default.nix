@@ -58,7 +58,7 @@ let
   senderMap =
     let
       entry = user: hostname: email:
-        "${email}\t${user.username},${user.username}@${hostname}\n";
+        "${email}\t${user.username}@${hostname}\n";
 
       addr = user: hostname:
         "${user.username}@${hostname}";
