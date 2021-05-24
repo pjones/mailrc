@@ -130,11 +130,10 @@ should_file_into() {
 ################################################################################
 should_all_be_unseen() {
   local maildir
-
   maildir=$(make_maildir_path "$1")
 
   assert "$1 folder should only have unseen messages" \
-    "$(mlist -s "$maildir" | wc -l)" -eq 0
+    "$(mlist -S "$maildir" | wc -l)" -eq 0
 }
 
 ################################################################################

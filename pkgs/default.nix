@@ -31,16 +31,4 @@ in
   sieve-system = pkgs.callPackage ./sieve-system.nix {
     inherit mkSieveDerivation;
   };
-
-  notmuch = pkgs.notmuch.overrideAttrs (orig: rec {
-    version = "0.31";
-    src = pkgs.fetchurl {
-      url = "https://notmuchmail.org/releases/${orig.pname}-${version}.tar.xz";
-      sha256 = "1543l57viqzqikjgfzp2abpwz3p0k2iq0b1b3wmn31lwaghs07sp";
-    };
-    preCheck = ''
-      mkdir -p test/test-databases
-      ${orig.preCheck}
-    '';
-  });
 }

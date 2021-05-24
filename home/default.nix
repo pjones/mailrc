@@ -65,7 +65,7 @@ in
       packages = lib.mkOption {
         type = lib.types.listOf lib.types.package;
         default = [
-          mailpkgs.notmuch
+          pkgs.notmuch
           pkgs.muchsync
           pkgs.mblaze
         ];
