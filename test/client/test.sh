@@ -7,6 +7,7 @@ set -o pipefail
 ################################################################################
 TEST_ROOT=${TEST_ROOT:-"$(dirname "$0")/.."}
 TEST_USER=${TEST_USER:-tester}
+XDG_DATA_HOME=${XDG_DATA_HOME:-$HOME/.local/share}
 
 ################################################################################
 GPG_KEY=password
@@ -158,7 +159,7 @@ should_move_tagged_messages() {
     "$(notmuch count tag:move)" -eq "$from_count"
 
   # Call the move hook to move messages around:
-  "$MAIL_OUPUT/.notmuch/hooks/x-post-tag"
+  "$XDG_DATA_HOME/notmuch/hooks/x-post-tag"
 
   assert "number of messages in $to_folder should increase by $from_count" \
     "$((to_count + from_count))" -eq "$(maildir_count "$to_folder")"

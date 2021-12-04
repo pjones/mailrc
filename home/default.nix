@@ -5,8 +5,7 @@ let
   mailpkgs = import ../pkgs { inherit pkgs; };
 
   # Return the full path to the given hook file.
-  hookFile = name:
-    "${cfg.notmuch.ini.database.path}/.notmuch/hooks/${name}";
+  hookFile = name: "${cfg.notmuch.ini.database.hook_dir}/${name}";
 
   mkHookScript = name: lines: {
     ${hookFile name}.source =
@@ -21,6 +20,9 @@ let
     let tagFile = pkgs.writeText name (types.tags.toString tagList);
     in "notmuch tag --batch --input=${tagFile}";
 
+  # The notmuch configuration file:
+  notmuchConfig = pkgs.writeText "notmuch-config"
+    (types.notmuchIni.toString cfg.notmuch.ini);
 in
 {
   imports = [
@@ -87,7 +89,7 @@ in
         ++ [ mailpkgs.notmuch-scripts ];
 
       home.file = {
-        ".notmuch-config".text = types.notmuchIni.toString cfg.notmuch.ini;
+        ".notmuch-config".source = notmuchConfig;
 
         ${hookFile "x-post-tag"}.source =
           "${mailpkgs.notmuch-scripts}/bin/notmuch-post-tag-hook";
@@ -106,6 +108,20 @@ in
           ${notmuchTagCmd "post-new-tags" cfg.notmuch.postNewTags}
           ${cfg.notmuch.postInsertScript}
         '');
+
+      # Ensure we have a notmuch database path and database otherwise
+      # we won't be able to insert new messages.
+      home.activation.bootstrap-notmuch =
+        lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+          if [ ! -d "${cfg.notmuch.ini.database.path}" ]; then
+            $DRY_RUN_CMD mkdir -p "${cfg.notmuch.ini.database.path}"
+          fi
+
+          if [ ! -d "${cfg.notmuch.ini.database.path}/.notmuch" ]; then
+            $DRY_RUN_CMD env NOTMUCH_CONFIG=${notmuchConfig} \
+              ${pkgs.notmuch}/bin/notmuch new
+          fi
+        '';
     })
 
     (lib.mkIf (cfg.enable && cfg.sieve.enable) {

@@ -8,6 +8,7 @@ let
   ini = {
     database = {
       path = "${config.home.homeDirectory}/mail";
+      hook_dir = "${config.xdg.dataHome}/notmuch/hooks";
     };
 
     user = {
