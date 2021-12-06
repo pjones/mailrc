@@ -2,6 +2,11 @@
 
 ## 2021-12-06 (NixOS 21.11)
 
+### Postfix (3.6.0 -> 3.6.3)
+
+  * Fixed the `compatibility_level` setting to that it uses one of the
+    official levels, namely `3.6`.
+
 ### Dovecot (2.3.16 -> 2.3.17)
 
   * Replaced the prometheus exporter for Dovecot with the built-in

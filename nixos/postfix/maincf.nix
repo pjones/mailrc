@@ -71,7 +71,7 @@ let
 in
 ''
   # Backwards compatibility for the configuration syntax:
-  compatibility_level=3
+  compatibility_level=3.6
 
   # Directories and Users
   queue_directory = ${cfg.postfixBaseDir}/queue
