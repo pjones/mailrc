@@ -93,9 +93,8 @@ in
 
     # Extra dovecot2 config:
     services.dovecot2.extraConfig = ''
-      auth_debug = yes
+      auth_debug = no
       mail_debug = no
-      mail_plugins = $mail_plugins old_stats
       postmaster_address = postmaster@${cfg.externalServerName}
 
       service auth {
@@ -114,13 +113,6 @@ in
         }
       }
 
-      service old-stats {
-        unix_listener old-stats {
-          user = dovecot-exporter
-          group = dovecot-exporter
-        }
-      }
-
       passdb {
         driver = passwd-file
         args = scheme=CRYPT username_format=%u ${passwordsFile}
@@ -134,7 +126,7 @@ in
       protocol imap {
         mail_max_userip_connections = 10
         imap_client_workarounds = delay-newmail
-        mail_plugins = $mail_plugins imap_sieve imap_old_stats
+        mail_plugins = $mail_plugins imap_sieve
       }
 
       protocol lmtp {
@@ -165,11 +157,6 @@ in
         }
       }
 
-      plugin {
-        old_stats_refresh = 30 secs
-        old_stats_track_cmds = yes
-      }
-
       # Sieve configuration for rspamd:
       plugin {
         sieve = file:~/.config/dovecot/sieve/scripts;active=~/.config/dovecot/sieve/active
@@ -187,6 +174,35 @@ in
         imapsieve_mailbox2_from = Junk
         imapsieve_mailbox2_causes = COPY
         imapsieve_mailbox2_before = file:${mailpkgs.sieve-system}/sieve/learn-ham.sieve
+      }
+
+      service stats {
+        inet_listener http {
+          port = 9166
+        }
+      }
+
+      metric auth_success {
+        filter = (event=auth_request_finished AND success=yes)
+      }
+
+      metric auth_failure {
+        filter = (event=auth_request_finished AND NOT success=yes)
+      }
+
+      metric imap_command {
+        filter = event=imap_command_finished
+        group_by = cmd_name tagged_reply_state
+      }
+
+      metric smtp_command {
+        filter = event=smtp_server_command_finished
+        group_by = cmd_name status_code duration:exponential:1:5:10
+      }
+
+      metric mail_delivery {
+        filter = event=mail_delivery_finished
+        group_by = duration:exponential:1:5:10
       }
     '';
 

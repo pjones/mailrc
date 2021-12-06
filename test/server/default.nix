@@ -1,5 +1,4 @@
-{ pkgs ?
-  let sources = import ../../nix/sources.nix;
+{ pkgs ? let sources = import ../../nix/sources.nix;
   in import sources.nixpkgs { }
 }:
 let
@@ -15,7 +14,7 @@ pkgs.nixosTest {
 
   nodes.machine = { ... }: {
     imports = [ ../common/server.nix ];
-    environment.systemPackages = [ tests ];
+    environment.systemPackages = [ tests pkgs.curl ];
   };
 
   testScript = ''
@@ -40,5 +39,8 @@ pkgs.nixosTest {
     machine.succeed("test-imap")
     machine.succeed("test -d /home/${user.systemUser}/mail/new")
     machine.succeed("test -d /home/${user.systemUser}/mail/.subs/new")
+
+    machine.succeed("curl --silent http://localhost:9166/metrics >&2")
+    machine.succeed("curl --silent http://localhost:9154/metrics >&2")
   '';
 }

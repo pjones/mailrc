@@ -51,12 +51,6 @@ in
     ############################################################################
     # Monitoring:
     services.prometheus = {
-      exporters.dovecot = {
-        enable = true;
-        scopes = [ "user" "global" ];
-        socketPath = "/var/run/dovecot2/old-stats";
-      };
-
       exporters.postfix = {
         enable = true;
         showqPath = "/var/lib/postfix/queue/public/showq";
