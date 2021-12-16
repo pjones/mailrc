@@ -1,9 +1,5 @@
-{ pkgs ?
-  let sources = import ../../nix/sources.nix;
-  in import sources.nixpkgs { }
-}:
+{ pkgs, home-manager }:
 let
-  sources = import ../../nix/sources.nix;
   user = import ../common/user.nix;
   tests = pkgs.callPackage ./test.nix { };
 
@@ -14,7 +10,7 @@ pkgs.nixosTest {
   nodes.machine = { ... }: {
     imports = [
       ../common/server.nix
-      "${sources.home-manager}/nixos"
+      home-manager.nixosModules.home-manager
     ];
 
     environment.systemPackages = [ tests ];

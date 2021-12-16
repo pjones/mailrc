@@ -1,8 +1,5 @@
-{ pkgs ?
-  let sources = import ../nix/sources.nix;
-  in import sources.nixpkgs { }
-}:
+{ pkgs, home-manager }:
 {
   server = import ./server { inherit pkgs; };
-  client = import ./client { inherit pkgs; };
+  client = import ./client { inherit pkgs home-manager; };
 }
