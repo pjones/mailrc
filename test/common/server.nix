@@ -18,8 +18,12 @@ in
 
   security.acme = {
     acceptTerms = true;
-    email = "test@example.com";
-    server = "https://127.0.0.1:1/directory";
+
+    defaults = {
+      email = "test@example.com";
+      server = "https://127.0.0.1:1/directory";
+      webroot = "/tmp";
+    };
   };
 
   users.users.${user.systemUser} = {
