@@ -19,7 +19,7 @@ pkgs.nixosTest {
     start_all()
     machine.wait_for_unit("postfix.service")
     machine.wait_for_unit("opendkim.service")
-    machine.wait_for_unit("redis.service")
+    machine.wait_for_unit("redis-rspamd.service")
     machine.wait_for_unit("rspamd.service")
     machine.wait_for_open_port(11332)
 

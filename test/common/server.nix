@@ -14,7 +14,7 @@ in
   };
 
   virtualisation.memorySize = 1024;
-  services.redis.logLevel = "debug";
+  services.redis.servers.rspamd.logLevel = "debug";
 
   security.acme = {
     acceptTerms = true;

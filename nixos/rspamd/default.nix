@@ -9,10 +9,10 @@ in
 
     ############################################################################
     # Use a Redis cache:
-    services.redis = {
+    services.redis.servers.rspamd = {
       enable = lib.mkForce true;
       bind = lib.mkDefault "127.0.0.1";
-      unixSocket = lib.mkDefault "/run/redis/redis.sock";
+      port = lib.mkDefault 16379;
     };
 
     ############################################################################
@@ -66,7 +66,7 @@ in
 
       locals."redis.conf".text = ''
         # Redis caching:
-        servers = "127.0.0.1:${toString config.services.redis.port}";
+        servers = "127.0.0.1:${toString config.services.redis.servers.rspamd.port}";
         expand_keys = yes;
       '';
 
@@ -101,8 +101,8 @@ in
     };
 
     systemd.services.rspamd = {
-      wants = [ "redis.service" ];
-      after = [ "redis.service" ];
+      wants = [ "redis-rspamd.service" ];
+      after = [ "redis-rspamd.service" ];
     };
   };
 }
