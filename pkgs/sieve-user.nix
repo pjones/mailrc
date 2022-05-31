@@ -1,5 +1,4 @@
 { mkSieveDerivation
-, notmuch
 , mblaze
 }:
 mkSieveDerivation {
@@ -7,7 +6,6 @@ mkSieveDerivation {
   src = ../sieve/user;
 
   path = [
-    notmuch
     mblaze
   ];
 

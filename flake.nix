@@ -46,7 +46,6 @@
             buildInputs = with pkgs; [
               postfix
               dovecot
-              notmuch
             ];
             inputsFrom = builtins.attrValues self.packages.${system};
           };

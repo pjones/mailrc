@@ -1,5 +1,11 @@
 # Important Changes
 
+## 2022-05-31 (NixOS 22.05)
+
+## Remove Notmuch/Muchsync
+
+  * All traces of notmuch and muchsync have been removed.
+
 ## 2021-12-06 (NixOS 21.11)
 
 ### Postfix (3.6.0 -> 3.6.3)

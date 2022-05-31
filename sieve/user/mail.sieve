@@ -3,6 +3,8 @@ require
   , "regex"
   , "vacation"
   , "vnd.dovecot.pipe"
+  , "fileinto"
+  , "mailbox"
   ];
 
 # auto-confirm@amazon.com
@@ -18,7 +20,7 @@ if allof
   # FIXME: At some point these should be piped to a script that will
   # extract the DMARC reports and load them into a database.
   setflag "\\seen";
-  pipe "notmuch-insert.sh" [ "root", "-unread" ];
+  fileinto :create "root";
 }
 
 ################################################################################
@@ -30,13 +32,13 @@ elsif address :is :localpart ["to", "cc"]
   ]
 {
   # Messages that need to go to a "root" mailbox.
-  pipe "notmuch-insert.sh" [ "root" ];
+  fileinto :create "root";
 }
 
 ################################################################################
 elsif address :is :localpart ["to", "cc"] "domains" {
   # Messages about domain names, DNS, etc.
-  pipe "notmuch-insert.sh" [ "misc" ];
+  fileinto :create "misc";
 }
 
 ################################################################################
@@ -51,7 +53,7 @@ elsif anyof
   )
 {
   # Messages about travel plans:
-  pipe "notmuch-insert.sh" [ "Travel" ];
+  fileinto :create "Travel";
 }
 
 ################################################################################
@@ -61,11 +63,5 @@ elsif anyof
   )
 {
   # Mailing lists that have a name.
-  pipe "notmuch-insert.sh" [ "mlists" ];
-}
-
-################################################################################
-else {
-  # Everything else goes into the Inbox:
-  pipe "notmuch-insert.sh" [ "INBOX" ];
+  fileinto :create "mlists";
 }
