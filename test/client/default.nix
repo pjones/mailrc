@@ -13,7 +13,10 @@ pkgs.nixosTest {
       home-manager.nixosModules.home-manager
     ];
 
-    environment.systemPackages = [ tests ];
+    environment.systemPackages = [
+      tests
+      pkgs.mblaze
+    ];
 
     home-manager.users.${user.systemUser} = { lib, ... }: {
       imports = [
@@ -42,5 +45,6 @@ pkgs.nixosTest {
 
     machine.wait_for_unit("dovecot2.service")
     machine.succeed("su - ${user.systemUser} -c mailrc-tests")
+    machine.succeed("test $(mlist /home/${user.systemUser}/mail/new | wc -l) -eq 1")
   '';
 }

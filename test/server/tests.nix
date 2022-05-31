@@ -2,6 +2,7 @@
 , writeText
 , writeShellScript
 , msmtp
+, mblaze
 , fetchmail
 , username
 , password
@@ -66,6 +67,23 @@ let
       localhost
   '';
 
+  # Count the number of new messages:
+  mcount = writeShellScript "maildir-count" ''
+    set -e
+    set -u
+
+    user=$1
+    dir=''${2:-"."}
+
+    if [ -d "/home/$user" ]; then
+      dir=/home/$user/mail/$dir/new
+    else
+      dir=/var/lib/virtmail/${domain}/${username}/mail/$dir/new
+    fi
+
+    ${mblaze}/bin/mlist "$dir" | wc -l
+  '';
+
 in
 stdenv.mkDerivation {
   name = "mail-tools-for-${username}";
@@ -74,5 +92,6 @@ stdenv.mkDerivation {
     mkdir -p $out/bin
     ln -nfs ${smtp} $out/bin/test-smtp
     ln -nfs ${imap} $out/bin/test-imap
+    ln -nfs ${mcount} $out/bin/test-new
   '';
 }

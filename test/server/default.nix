@@ -26,17 +26,18 @@ pkgs.nixosTest {
     machine.wait_for_unit("dovecot2.service")
     machine.succeed("test -e /var/lib/dovecot/passwords")
 
-    machine.succeed("test-smtp")
-    machine.succeed("test-smtp ${user.systemUser}@test.example.com")
-    machine.succeed("test-smtp ${user.systemUser}+foobar@test.example.com")
+    machine.succeed("test-smtp ${user.username}@${user.domain}")
+    machine.succeed("test-smtp ${user.systemUser}@${user.systemDomain}")
+    machine.succeed("test-smtp ${user.systemUser}+foobar@${user.systemDomain}")
 
     machine.wait_until_fails('[ "$(postqueue -p)" != "Mail queue is empty" ]')
     machine.fail("journalctl -u postfix | grep -i error >&2")
     # machine.fail("journalctl -u postfix | grep -i warning >&2")
 
     machine.succeed("test-imap")
-    machine.succeed("test -d /home/${user.systemUser}/mail/new")
-    machine.succeed("test -d /home/${user.systemUser}/mail/.subs/new")
+    machine.succeed("test $(test-new ${user.username}) -gt 0")
+    machine.succeed("test $(test-new ${user.systemUser}) -gt 0")
+    machine.succeed("test $(test-new ${user.systemUser} .subs) -gt 0")
 
     machine.succeed("curl --silent http://localhost:9166/metrics >&2")
     machine.succeed("curl --silent http://localhost:9154/metrics >&2")
