@@ -2,9 +2,9 @@
   description = "NixOS Mail Server (Postfix, Dovecot, etc.)";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.05";
 
-    home-manager.url = "github:nix-community/home-manager/master";
+    home-manager.url = "github:nix-community/home-manager/release-22.05";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
   };
 
@@ -39,16 +39,17 @@
           client = import ./test/client { inherit pkgs home-manager; };
         });
 
-      devShell = forAllSystems
-        (system:
-          let pkgs = nixpkgsFor.${system}; in
-          pkgs.mkShell {
+      devShells = forAllSystems (system:
+        let pkgs = nixpkgsFor.${system}; in
+        {
+          default = pkgs.mkShell {
             buildInputs = with pkgs; [
               postfix
               dovecot
               notmuch
             ];
             inputsFrom = builtins.attrValues self.packages.${system};
-          });
+          };
+        });
     };
 }
