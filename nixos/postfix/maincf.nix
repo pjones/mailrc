@@ -27,8 +27,6 @@ let
     "permit_mynetworks"
     permit_auth
     "reject_unauth_pipelining"
-    "reject_rbl_client zen.spamhaus.org"
-    "reject_rhsbl_reverse_client dbl.spamhaus.org"
     "permit"
   ];
 
@@ -64,7 +62,6 @@ let
     "reject_non_fqdn_sender"
     "reject_unknown_sender_domain"
     "check_sender_access hash:${cfg.postfixBaseDir}/etc/senderaccess"
-    "reject_rhsbl_sender dbl.spamhaus.org"
     "permit"
   ];
 
